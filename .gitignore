@@ -1,0 +1,13 @@
+# Project files and directories
+/.idea/
+
+# Build directories
+/Debug/
+/Release/
+/build/
+/cmake-build-debug/
+/cmake-build-release/
+
+# Dependencies
+/lib/args/
+/lib/common/

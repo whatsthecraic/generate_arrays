@@ -1,0 +1,3 @@
+[submodule "lib/common"]
+	path = lib/common
+	url = git@whatsthecraic.net:/git/libcommon.git

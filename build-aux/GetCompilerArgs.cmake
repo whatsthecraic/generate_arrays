@@ -1,0 +1,61 @@
+include_guard(GLOBAL)
+include(Trim)
+
+function(get_compiler_flags target lang result)
+    # Retrieve ${CMAKE_[C|CXX]_FLAGS_[Debug|Release]
+    string(TOUPPER "CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE}" name)
+    set(flags "${${name}}")
+#    message("1- flags: ${flags}")
+
+    # CMAKE_[C|CXX]_COMPILER_ARG1
+    set(flags "${flags} ${CMAKE_${lang}_COMPILER_ARG1}")
+
+    # Retrieve ${CMAKE_[C|CXX]_FLAGS}
+    set(flags "${flags} ${CMAKE_${lang}_FLAGS}")
+#    message("3- flags: ${flags}")
+
+    trim("${flags}" flags)
+    set(${result} "${flags}" PARENT_SCOPE)
+endfunction()
+
+macro(get_c_compiler_flags target flags)
+    get_compiler_flags("${target}" "C" "${flags}")
+endmacro()
+
+macro(get_cxx_compiler_flags target flags)
+    get_compiler_flags("${target}" "CXX" "${flags}")
+endmacro()
+
+
+#>     string(TOUPPER "CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE}" name)
+#>     set(flags "${${name}} ${CMAKE_CXX_FLAGS} ${CMAKE_CXX_COMPILER_ARG1}")
+#>     get_target_property(value ${target} COMPILE_FLAGS)
+#>     if (value)
+#>         list(APPEND flags ${value})
+#>     endif()
+#>     get_target_property(value ${target} TYPE)
+#>     get_target_property(value ${target} COMPILE_DEFINITIONS)
+#>     if (value)
+#>         foreach(item ${value})
+#>             list(APPEND flags "-D${item}")
+#>         endforeach()
+#>     endif()
+#>     STRING(TOUPPER "COMPILE_DEFINITIONS_${CMAKE_BUILD_TYPE}" name)
+#>     get_target_property(value ${target} ${name})
+#>     if (value)
+#>         foreach(item ${value})
+#>             list(APPEND flags "-D${item}")
+#>         endforeach()
+#>     endif()
+#>     get_directory_property(value DEFINITIONS)
+#>     if (value)
+#>         list(APPEND flags ${value})
+#>     endif()
+#>     get_directory_property(value INCLUDE_DIRECTORIES)
+#>     if (value)
+#>         foreach(item ${value})
+#>             list(APPEND flags "-I${item}")
+#>         endforeach()
+#>     endif()
+#>     #separate_arguments(flags)
+#> endmacro()
