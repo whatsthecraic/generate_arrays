@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.12)
-set(executable "generate_array")
+set(executable "generate_arrays")
 
 # Be verbose
 set(CMAKE_VERBOSE_MAKEFILE ON)
