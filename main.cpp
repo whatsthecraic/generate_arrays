@@ -32,7 +32,26 @@ using namespace args;
 using namespace common;
 using namespace std;
 
-static void generate(string folder, uint64_t num_arrays, uint64_t sz_array, int digits, uint64_t seed){
+static void save_random(fstream& output, uint64_t cardinality, uint64_t seed){
+    mt19937_64 generator{seed};
+    uniform_int_distribution<uint64_t> distribution{ 0, numeric_limits<uint64_t>::max() };
+
+    for(uint64_t i = 0; i < cardinality; i++){
+        uint64_t value = distribution(generator);
+        output.write((char*) &value, sizeof(value));
+        if(!output.good()) ERROR("Cannot write the value in the file");
+    }
+}
+
+static void save_sequential(fstream& output, uint64_t cardinality){
+    for(uint64_t i = 0; i < cardinality; i++){
+        uint64_t value = i;
+        output.write((char*) &value, sizeof(value));
+        if(!output.good()) ERROR("Cannot write the value in the file");
+    }
+}
+
+static void generate(string folder, uint64_t num_arrays, uint64_t sz_array, int digits, uint64_t seed, bool random){
     cout << "[Generate] Path: " << folder << ", arrays: " << num_arrays << ", cardinality: " << sz_array << ", digits: " << digits << ", seed: " << seed << endl;
 
     filesystem::mkdir(folder);
@@ -47,10 +66,10 @@ static void generate(string folder, uint64_t num_arrays, uint64_t sz_array, int 
         fstream output(path, ios_base::out | ios_base::binary | ios_base::trunc );
         if(!output.good()) ERROR("Cannot open the file `" << path << "' for writing");
 
-        for(uint64_t i = 0; i < sz_array; i++){
-            uint64_t value = distribution(generator);
-            output.write((char*) &value, sizeof(value));
-            if(!output.good()) ERROR("Cannot write the value in the file `" << path << "'");
+        if(random){
+            save_random(output, sz_array, seed);
+        } else {
+            save_sequential(output, sz_array);
         }
 
         output.close();
@@ -65,9 +84,11 @@ int main(int argc, char* argv[]) {
     HelpFlag argument_help{parser, "help", "Display this help menu", {'h', "help"}};
 
     // Number of arrays to generate
-    ValueFlag<Quantity> argument_num_arrays{parser, "value >0", "Number of arrays to generate", {'N'}};
-    ValueFlag<Quantity> argument_size_arrays{parser, "value >0", "The target cardinality of each array", {'M'}};
+    ValueFlag<Quantity> argument_cardinality{parser, "value >0", "The target cardinality of each array", {'c', "cardinality"}};
     ValueFlag<int> argument_digits{parser, "value > 0", "Number of each digits for the name of each path", {'d'}, 3};
+    ValueFlag<Quantity> argument_num_arrays{parser, "value >0", "Number of arrays to generate", {'N'}};
+    Flag argument_random{parser, "random", "Whether to store random integers in the file", {'r', "random"}};
+    ValueFlag<Quantity> argument_size{parser, "value > 0", "The size (in bytes) of teach array", {'S', "size"}, Quantity{0, true}};
     ValueFlag<uint64_t> argument_seed{parser, "value", "The seed for the random generator", {'s', "seed"}, 1ULL};
 
     // Destination path
@@ -77,20 +98,28 @@ int main(int argc, char* argv[]) {
         parser.ParseCLI(argc, argv);
 
         string path = argument_path.Get();
-        if(!argument_path) ERROR("Missing mandatory argument `path'. Usage: " << argv[0] << " {options} <path>");
+        if(!argument_path) ERROR("Missing mandatory argument `path'. Usage: " << argv[0] << " {options} -S <size> <path>");
 
         uint64_t num_arrays = static_cast<uint64_t>(argument_num_arrays.Get());
         if(num_arrays <= 0) ERROR("Invalid amount of arrays to generate (-N): " << num_arrays);
 
-        uint64_t size_arrays = static_cast<uint64_t>(argument_size_arrays.Get());
-        if(size_arrays <= 0) ERROR("Invalid target cardinality (-M): " << size_arrays);
+        uint64_t size_arrays = 0;
+        if(!argument_cardinality && argument_size.Get() == 0){
+            ERROR("Missing both the cardinality and the size of the target array. Usage: " << argv[0] << " {options} -S <size> <path>");
+        } else if (argument_cardinality){
+            size_arrays = static_cast<uint64_t>(argument_cardinality.Get());
+        } else {
+            size_arrays = static_cast<uint64_t>(argument_size.Get()) / sizeof(uint64_t);
+        }
+        if(size_arrays <= 0) ERROR("Invalid target cardinality: " << size_arrays);
 
         int digits = argument_digits.Get();
         if(digits <= 0) ERROR("Invalid number of digits: " << digits);
 
         uint64_t seed = argument_seed.Get();
+        bool is_random = argument_random.Get();
 
-        generate(path, num_arrays, size_arrays, digits, seed);
+        generate(path, num_arrays, size_arrays, digits, seed, is_random);
     } catch(Help){
         cout << parser;
 
