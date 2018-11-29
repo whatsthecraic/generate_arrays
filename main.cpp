@@ -43,9 +43,9 @@ static void save_random(fstream& output, uint64_t cardinality, uint64_t seed){
     }
 }
 
-static void save_sequential(fstream& output, uint64_t cardinality){
+static void save_sequential(fstream& output, uint64_t cardinality, uint64_t array_index){
     for(uint64_t i = 0; i < cardinality; i++){
-        uint64_t value = i;
+        uint64_t value = array_index + i; // array0: 0, 1, 2, 3, ...; array1: 1, 2, 3, 4, ...
         output.write((char*) &value, sizeof(value));
         if(!output.good()) ERROR("Cannot write the value in the file");
     }
@@ -59,7 +59,7 @@ static void generate(string folder, uint64_t num_arrays, uint64_t sz_array, int 
     mt19937_64 generator{seed};
     uniform_int_distribution<uint64_t> distribution{ 0, numeric_limits<uint64_t>::max() };
 
-    for(uint64_t k =0; k < num_arrays; k++){
+    for(uint64_t k = 0; k < num_arrays; k++){
         char path[PATH_MAX];
         sprintf(path, "%s/%0*" PRIu64 ".bin", folder.c_str(), digits, k);
         cout << "[" << (k+1) << "/" << num_arrays << "] Generating " << path << " ..." << endl;
@@ -69,7 +69,7 @@ static void generate(string folder, uint64_t num_arrays, uint64_t sz_array, int 
         if(random){
             save_random(output, sz_array, seed);
         } else {
-            save_sequential(output, sz_array);
+            save_sequential(output, sz_array, k);
         }
 
         output.close();
@@ -88,7 +88,7 @@ int main(int argc, char* argv[]) {
     ValueFlag<int> argument_digits{parser, "value > 0", "Number of each digits for the name of each path", {'d'}, 3};
     ValueFlag<Quantity> argument_num_arrays{parser, "value >0", "Number of arrays to generate", {'N'}};
     Flag argument_random{parser, "random", "Whether to store random integers in the file", {'r', "random"}};
-    ValueFlag<Quantity> argument_size{parser, "value > 0", "The size (in bytes) of teach array", {'S', "size"}, Quantity{0, true}};
+    ValueFlag<Quantity> argument_size{parser, "value > 0", "The size (in bytes) of each array", {'S', "size"}, Quantity{0, true}};
     ValueFlag<uint64_t> argument_seed{parser, "value", "The seed for the random generator", {'s', "seed"}, 1ULL};
 
     // Destination path
